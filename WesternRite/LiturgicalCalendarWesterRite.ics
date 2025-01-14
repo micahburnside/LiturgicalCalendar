@@ -1,4 +1,14 @@
 BEGIN:VCALENDAR
 PRODID:-//Western Rite//St Stephen's Orthodox Church//Liturgical Calendar//EN
 VERSION:2.0
+
+BEGIN:VEVENT
+UID:20250101
+DTSTAMP:20250101T000000Z
+DTSTART;VALUE=DATE:20250101
+DTEND;VALUE=DATE:20250102
+SUMMARY:The Circumcision of Our Lord Jesus Christ, and Octave of the Nativity
+DESCRIPTION:Fasting: None; Vestments: White.
+END:VEVENT
+
 END:VCALENDAR
