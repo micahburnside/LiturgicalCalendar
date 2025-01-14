@@ -1,6 +1,7 @@
 BEGIN:VCALENDAR
 PRODID:-//Western Rite//St Stephen's Orthodox Church//Liturgical Calendar//EN
 VERSION:2.0
+CALSCALE:GREGORIAN
 
 BEGIN:VEVENT
 UID:20250101
