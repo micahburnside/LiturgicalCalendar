@@ -45,7 +45,7 @@ DTSTART;VALUE=DATE:20250105
 DTEND;VALUE=DATE:20250106
 SUMMARY:The Second Sunday after Christmas
 DESCRIPTION:Epiphany if not on observed on Monday morning.
-Vestments: White
+Vestments: White Vestments
 END:VEVENT
 
 BEGIN:VEVENT
@@ -108,7 +108,7 @@ DTSTAMP:20250112T000000Z
 DTSTART;VALUE=DATE:20250112
 DTEND;VALUE=DATE:20250113
 SUMMARY:First Sunday after Epiphany; St. Benedict Biscop, Ab, 690
-DESCRIPTION:
+DESCRIPTION:White Vestments
 END:VEVENT
 
 BEGIN:VEVENT
