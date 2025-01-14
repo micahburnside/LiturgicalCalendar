@@ -1,59 +1,48 @@
-name: Deploy ICS to Supabase
+name: Deploy to Supabase
 
 on:
   push:
     branches:
-      - main    # Deploy to Main bucket on the main branch
-      - staging # Deploy to Staging bucket on the staging branch
-      - dev     # Deploy to Dev bucket on the dev branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # Checkout the repository
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Set Variables
-      id: set-vars
-      run: |
-        if [[ "${{ github.ref_name }}" == "main" ]]; then
-          echo "BUCKET_NAME=LiturgicalCalendarsMain" >> $GITHUB_ENV
-        elif [[ "${{ github.ref_name }}" == "staging" ]]; then
-          echo "BUCKET_NAME=LiturgicalCalendarsStaging" >> $GITHUB_ENV
-        elif [[ "${{ github.ref_name }}" == "dev" ]]; then
-          echo "BUCKET_NAME=LiturgicalCalendarsDev" >> $GITHUB_ENV
-        fi
-        echo "FILE_PATH=WesternRite/LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
-        echo "FILE_NAME=LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
+      # Set environment variables based on the branch
+      - name: Set Environment Variables
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "BUCKET_NAME=LiturgicalCalendarsMain" >> $GITHUB_ENV
+          fi
+          echo "FILE_PATH=WesternRite/LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
+          echo "FILE_NAME=LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
 
-    - name: Debug Info
-      run: |
-        echo "Bucket Name: $BUCKET_NAME"
-        echo "File Path: $FILE_PATH"
-        echo "File Name: $FILE_NAME"
-        echo "Supabase URL: $SUPABASE_URL"
+            # Debugging: Print environment variables
+      - name: Debug - Print Variables
+        run: |
+          echo "Bucket Name: $BUCKET_NAME"
+          echo "File Path: $FILE_PATH"
+          echo "File Name: $FILE_NAME"
+          echo "Supabase URL: $SUPABASE_URL"
 
-    - name: Upload .ics to Supabase
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      run: |
-        # Upload the file directly to the bucket root
-        curl -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
-          -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-          -H "Content-Type: text/calendar" \
-          --data-binary @"$FILE_PATH"
+      # Upload the file to Supabase bucket
+      - name: Upload to Supabase
+        run: |
+          curl -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: text/calendar" \
+            --data-binary @"$FILE_PATH"
 
-    - name: Generate Signed URL (Optional)
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      run: |
-        # Generate a signed URL
-        RESPONSE=$(curl -s -X POST "${SUPABASE_URL}/storage/v1/object/sign/${BUCKET_NAME}/${FILE_NAME}" \
-          -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-          -H "Content-Type: application/json" \
-          -d '{"expiresIn": 604800}') # Signed URL valid for 7 days (604800 seconds)
-        echo "Signed URL: $RESPONSE"
+      # Debugging: Generate a signed URL to verify upload
+      - name: Generate Signed URL
+        run: |
+          RESPONSE=$(curl -s -X POST "${SUPABASE_URL}/storage/v1/object/sign/${BUCKET_NAME}/${FILE_NAME}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"expiresIn": 604800}')
+          echo "Signed URL: $RESPONSE"
