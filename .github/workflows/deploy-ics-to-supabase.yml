@@ -50,13 +50,14 @@ jobs:
       # Step 5: Upload File to Supabase
       - name: Upload Liturgical Calendar
         run: |
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
+          RESPONSE=$(curl -s -w "%{http_code}" -o response_body.txt -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: text/calendar" \
             --data-binary @"$FILE_PATH")
-          if [[ "$STATUS_CODE" -ne 200 ]]; then
-            echo "Upload failed with status code $STATUS_CODE!"
+          cat response_body.txt
+          if [[ "$RESPONSE" -ne 200 ]]; then
+            echo "Upload failed with status code $RESPONSE!"
             exit 1
           else
-            echo "Upload succeeded with status code $STATUS_CODE!"
+            echo "Upload succeeded with status code $RESPONSE!"
           fi
