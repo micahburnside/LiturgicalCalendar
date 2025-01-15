@@ -8,12 +8,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      # Checkout the repository
+      # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Set environment variables based on the branch
+      # Step 2: Set Environment Variables
       - name: Set Environment Variables
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
@@ -22,23 +23,35 @@ jobs:
           echo "FILE_PATH=WesternRite/LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
           echo "FILE_NAME=LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
 
-            # Debugging: Print environment variables
+      # Step 3: Debugging - Print Variables
       - name: Debug - Print Variables
         run: |
-          echo "Bucket Name: $BUCKET_NAME"
-          echo "File Path: $FILE_PATH"
-          echo "File Name: $FILE_NAME"
-          echo "Supabase URL: $SUPABASE_URL"
+          set -e
+          echo "Bucket Name: ${BUCKET_NAME:-not set}"
+          echo "File Path: ${FILE_PATH:-not set}"
+          echo "File Name: ${FILE_NAME:-not set}"
+          echo "Supabase URL: ${SUPABASE_URL:-not set}"
 
-      # Upload the file to Supabase bucket
+      # Step 4: Verify File Existence
+      - name: Verify File Existence
+        run: |
+          if [[ ! -f "$FILE_PATH" ]]; then
+            echo "Error: File $FILE_PATH does not exist."
+            exit 1
+          fi
+
+      # Step 5: Upload to Supabase
       - name: Upload to Supabase
         run: |
-          curl -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
+          curl -s -o /dev/null -w "%{http_code}" -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: text/calendar" \
-            --data-binary @"$FILE_PATH"
+            --data-binary @"$FILE_PATH" || {
+              echo "Upload failed!"
+              exit 1
+            }
 
-      # Debugging: Generate a signed URL to verify upload
+      # Step 6: Generate Signed URL
       - name: Generate Signed URL
         run: |
           RESPONSE=$(curl -s -X POST "${SUPABASE_URL}/storage/v1/object/sign/${BUCKET_NAME}/${FILE_NAME}" \
