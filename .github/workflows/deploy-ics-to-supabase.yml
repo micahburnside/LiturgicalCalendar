@@ -1,21 +1,37 @@
-name: Deploy to Supabase
+name: Deploy Liturgical Calendar
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
     steps:
-      # Step 1: Checkout Code
-      - name: Checkout Code
+      # Step 1: Check out the code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Set Environment Variables
-      - name: Set Environment Variables
+      # Step 2: Debug Environment Variables
+      - name: Debug Environment Variables
+        run: |
+          echo "Supabase URL: ${SUPABASE_URL:-not set}"
+          echo "Bucket Name: ${BUCKET_NAME:-not set}"
+          echo "File Path: ${FILE_PATH:-not set}"
+          echo "File Name: ${FILE_NAME:-not set}"
+
+      # Step 3: Set Dynamic Variables
+      - name: Set Environment Variables Based on Branch
         run: |
           if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
             echo "BUCKET_NAME=LiturgicalCalendarsMain" >> $GITHUB_ENV
@@ -23,39 +39,24 @@ jobs:
           echo "FILE_PATH=WesternRite/LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
           echo "FILE_NAME=LiturgicalCalendarWesterRite.ics" >> $GITHUB_ENV
 
-      # Step 3: Debugging - Print Variables
-      - name: Debug - Print Variables
-        run: |
-          set -e
-          echo "Bucket Name: ${BUCKET_NAME:-not set}"
-          echo "File Path: ${FILE_PATH:-not set}"
-          echo "File Name: ${FILE_NAME:-not set}"
-          echo "Supabase URL: ${SUPABASE_URL:-not set}"
-
-      # Step 4: Verify File Existence
-      - name: Verify File Existence
+      # Step 4: Verify the File Path Exists
+      - name: Verify File Path
         run: |
           if [[ ! -f "$FILE_PATH" ]]; then
             echo "Error: File $FILE_PATH does not exist."
             exit 1
           fi
 
-      # Step 5: Upload to Supabase
-      - name: Upload to Supabase
+      # Step 5: Upload File to Supabase
+      - name: Upload Liturgical Calendar
         run: |
-          curl -s -o /dev/null -w "%{http_code}" -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${FILE_NAME}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: text/calendar" \
-            --data-binary @"$FILE_PATH" || {
-              echo "Upload failed!"
-              exit 1
-            }
-
-      # Step 6: Generate Signed URL
-      - name: Generate Signed URL
-        run: |
-          RESPONSE=$(curl -s -X POST "${SUPABASE_URL}/storage/v1/object/sign/${BUCKET_NAME}/${FILE_NAME}" \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "Content-Type: application/json" \
-            -d '{"expiresIn": 604800}')
-          echo "Signed URL: $RESPONSE"
+            --data-binary @"$FILE_PATH")
+          if [[ "$STATUS_CODE" -ne 200 ]]; then
+            echo "Upload failed with status code $STATUS_CODE!"
+            exit 1
+          else
+            echo "Upload succeeded with status code $STATUS_CODE!"
+          fi
